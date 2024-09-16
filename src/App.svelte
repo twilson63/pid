@@ -10,9 +10,8 @@
   const getSU = (pid) => fetch(`https://su-router.ao-testnet.xyz/${pid}?limit=1000&from=${Date.now() - 60000}`).then(async res => {
       let body = await res.json() 
       let url = res.url
-      console.log(body)
       return { body, url }
-    }) 
+    }).then(result => ({ url: result.url, nonce: result.body.edges[result.body.edges.length -1].node.assignment.tags.find(t => t.name === "Nonce")?.value}))
   const getCU = (pid) => fetch(`https://cu.ao-testnet.xyz/dry-run?process-id=${pid}`, {
     method: 'post',
     headers: {'Content-Type': 'application/json'},
@@ -45,7 +44,8 @@
     isActive = true
     console.log('Submitted PID:', pid);
     const res = await Promise.all([getSU(pid), getCU(pid)])
-    servers = res.map(({url, analytics }) => ({ url: (new URL(url)).origin, analytics } ))
+    servers = res.map(({url, analytics, nonce }) => ({ url: (new URL(url)).origin, analytics, nonce } ))
+
     isActive = false
   }
 </script>
@@ -66,6 +66,9 @@
     {#each servers as server}
     <li style="text-align:left">
       {server.url}
+      {#if server.nonce}
+      <p>Nonce: {server.nonce}</p>
+      {/if}
       {#if server.analytics}
       <a href={server.analytics} target="_blank">Dashboard</a>
       {/if}
